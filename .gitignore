@@ -1,0 +1,15 @@
+# Large data files — regenerate from the source Excel with scripts/build_import_csvs.py
+import_files/*.csv
+
+# Never commit secrets (DB connection string / password). The loader reads the
+# connection string from an environment variable, so nothing secret is stored here.
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db

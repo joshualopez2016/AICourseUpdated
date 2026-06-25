@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Data Lookup & Trend Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Data Dashboard</div>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="#trends">Trends</a></li>
+                <li><a href="#records">Records</a></li>
+                <li><a href="#" id="logoutButton">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <section class="dashboard">
+        <div class="container">
+            <!-- Hero/Welcome Section -->
+            <div class="dashboard-hero">
+                <h1 id="welcomeTitle">Welcome back</h1>
+                <p>Search, filter, and understand your test records without writing SQL.</p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>Total Records</h3>
+                    <p class="summary-value" id="totalRecords">—</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Passed</h3>
+                    <p class="summary-value passed" id="passedRecords">—</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Failed</h3>
+                    <p class="summary-value failed" id="failedRecords">—</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Fail Rate</h3>
+                    <p class="summary-value" id="failRate">—</p>
+                </div>
+            </div>
+
+            <!-- Search + Filter Card -->
+            <div class="card filter-card">
+                <h3>Search &amp; Filter</h3>
+                <div class="filter-form">
+                    <div class="form-group">
+                        <label for="searchInput">Keyword (station, model, product line):</label>
+                        <input type="text" id="searchInput" placeholder="e.g. RLB41, ELT4K, station 9...">
+                    </div>
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="sourceFilter">Product line:</label>
+                            <select id="sourceFilter">
+                                <option value="">All product lines</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="stationFilter">Station:</label>
+                            <select id="stationFilter">
+                                <option value="">All stations</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="resultFilter">Result:</label>
+                            <select id="resultFilter">
+                                <option value="">All results</option>
+                                <option value="Pass">Pass</option>
+                                <option value="Fail">Fail</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="startDate">Start date:</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End date:</label>
+                            <input type="date" id="endDate">
+                        </div>
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="apply-button" id="applyFilters">Apply</button>
+                        <button class="reset-button" id="resetFilters">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trend Overview Section -->
+            <div class="trend-section" id="trends">
+                <h2>Trend Overview</h2>
+
+                <div class="charts-grid">
+                    <div class="card chart-card">
+                        <h3>Pass vs Fail</h3>
+                        <div class="chart-box"><canvas id="passFailChart"></canvas></div>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Records by Product Line</h3>
+                        <div class="chart-box"><canvas id="bySourceChart"></canvas></div>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Fail Rate by Station (Top 10)</h3>
+                        <div class="chart-box"><canvas id="byStationChart"></canvas></div>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Tests Over Time (Monthly)</h3>
+                        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Records Table -->
+            <div class="card table-card" id="records">
+                <h3>Records</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product Line</th>
+                                <th>Model</th>
+                                <th>Station</th>
+                                <th>Result</th>
+                                <th>Bursts</th>
+                                <th>Power (dBm)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTable">
+                            <tr><td colspan="7" style="text-align:center;">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button class="page-button" id="prevPage" disabled>← Prev</button>
+                    <span id="pageInfo">Page 1</span>
+                    <button class="page-button" id="nextPage" disabled>Next →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Data Lookup &amp; Trend Dashboard. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Libraries: Supabase client + Chart.js (load before our config + dashboard code) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

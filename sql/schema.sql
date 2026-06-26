@@ -45,6 +45,15 @@ create index if not exists idx_test_records_station       on public.test_records
 create index if not exists idx_test_records_station_trgm  on public.test_records using gin (station gin_trgm_ops);
 create index if not exists idx_test_records_model_trgm    on public.test_records using gin (product_model gin_trgm_ops);
 
+-- Unit-lookup speed-up: the dashboard's "Look Up a Unit by Serial" feature
+-- matches a unit on its serial = a 3-digit prefix field + a 5-digit suffix
+-- field inside `details` (named differently per product line). These composite
+-- functional indexes make that two-field equality lookup fast (esp. Hand_Held's
+-- ~390k rows). Optional but recommended; the lookup works without them.
+create index if not exists idx_tr_handheld_serial on public.test_records ((details->>'start_n'), (details->>'end_n')) where source = 'Hand_Held';
+create index if not exists idx_tr_fly_serial      on public.test_records ((details->>'id_1'),    (details->>'id_n')) where source = 'FLY';
+create index if not exists idx_tr_boat_serial     on public.test_records ((details->>'id1'),     (details->>'id2'))  where source = 'Boat';
+
 -- ---------------------------------------------------------------------
 -- 3) Row Level Security
 -- ---------------------------------------------------------------------
@@ -166,3 +175,60 @@ end;
 $$;
 
 grant execute on function public.get_dashboard_stats(text, text, text, text, timestamp, timestamp) to authenticated;
+
+-- Cold-start mitigation: after the free project wakes from pause, the first run
+-- of this heavy aggregate (over ~517k rows, cold cache) can exceed the default
+-- 8s statement timeout and get cancelled (error 57014), leaving the cards blank.
+-- Give this one function more headroom so the first call completes. (The frontend
+-- also retries on timeout, so this is belt-and-suspenders.)
+alter function public.get_dashboard_stats(text, text, text, text, timestamp, timestamp)
+    set statement_timeout = '25s';
+
+-- ---------------------------------------------------------------------
+-- 6) get_capability_over_time(...) -- fixture capability analysis
+-- ---------------------------------------------------------------------
+-- For one product line, group its test records by a time bucket and return
+-- tested / passed / failed / fail_rate per bucket. Used to spot whether the
+-- fixture's fail rate spikes at a certain time of day, month, or year.
+--   p_bucket: 'hour' (time of day 00:00-23:00) | 'month' (YYYY-MM) | 'year'
+-- When p_day is given, the data is limited to that single date and bucketed by
+-- hour (drill into one specific day); otherwise it aggregates across all days.
+drop function if exists public.get_capability_over_time(text, text);
+create or replace function public.get_capability_over_time(
+    p_source text default null,
+    p_bucket text default 'hour',
+    p_day    date default null
+)
+returns json
+language sql
+stable
+security invoker
+as $$
+    select coalesce(json_agg(row_to_json(b) order by b.bucket), '[]'::json)
+    from (
+        select
+            case
+                when p_day is not null  then lpad(extract(hour from record_date)::text, 2, '0') || ':00'
+                when p_bucket = 'week'  then to_char(record_date, 'IYYY-"W"IW')
+                when p_bucket = 'month' then to_char(date_trunc('month', record_date), 'YYYY-MM')
+                when p_bucket = 'year'  then to_char(date_trunc('year',  record_date), 'YYYY')
+                else lpad(extract(hour from record_date)::text, 2, '0') || ':00'
+            end as bucket,
+            count(*)                                          as total,
+            count(*) filter (where result = 'Pass')           as passed,
+            count(*) filter (where result = 'Fail')           as failed,
+            round(100.0 * count(*) filter (where result = 'Fail')
+                  / nullif(count(*), 0), 1)                   as fail_rate
+        from public.test_records
+        where record_date is not null
+          and (p_source is null or source = p_source)
+          and (p_day    is null or record_date::date = p_day)
+        group by 1
+        order by 1
+    ) b;
+$$;
+
+grant execute on function public.get_capability_over_time(text, text, date) to authenticated;
+
+alter function public.get_capability_over_time(text, text, date)
+    set statement_timeout = '25s';

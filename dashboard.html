@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Data Lookup & Trend Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="css/style.css">
+    <script>try{var t=localStorage.getItem('pt-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 </head>
 <body>
+    <!-- Live map background (basemap + AIS vessels) -->
+    <div id="mapBg" aria-hidden="true"></div>
+
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
@@ -17,6 +22,7 @@
                 <li><a href="dashboard.html" class="active">Dashboard</a></li>
                 <li><a href="#trends">Trends</a></li>
                 <li><a href="#records">Records</a></li>
+                <li><button type="button" id="themeToggle" class="theme-toggle">🌙 Dark</button></li>
                 <li><a href="#" id="logoutButton">Logout</a></li>
             </ul>
         </div>
@@ -27,28 +33,67 @@
         <div class="container">
             <!-- Hero/Welcome Section -->
             <div class="dashboard-hero">
-                <h1 id="welcomeTitle">Welcome back</h1>
-                <p>Search, filter, and understand your test records without writing SQL.</p>
+                <div class="hero-mark">
+                    <svg class="hero-mark-x" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <polygon transform="rotate(45 100 100)"
+                                 points="60,10 140,10 140,60 190,60 190,140 140,140 140,190 60,190 60,140 10,140 10,60 60,60"
+                                 fill="#141414" stroke="#c6ff00" stroke-width="12" stroke-linejoin="round"/>
+                    </svg>
+                    <h1 class="hero-mark-title">Product<br>Tracker</h1>
+                </div>
+                <p id="welcomeTitle" class="welcome-greeting"></p>
+                <p>SQL and Report Look Up Application</p>
+                <p id="dbStatus" class="db-status" hidden></p>
             </div>
 
             <!-- Summary Cards -->
             <div class="summary-cards">
-                <div class="summary-card">
+                <div class="summary-card" id="totalCard">
                     <h3>Total Records</h3>
                     <p class="summary-value" id="totalRecords">—</p>
+                    <button class="breakdown-toggle" id="breakdownToggle" type="button" aria-expanded="false">▸ by product line</button>
                 </div>
-                <div class="summary-card">
-                    <h3>Passed</h3>
-                    <p class="summary-value passed" id="passedRecords">—</p>
+            </div>
+
+            <!-- Per-product-line breakdown (toggled by the Total card) -->
+            <div class="card breakdown-card" id="totalBreakdown" hidden>
+                <h3>Breakdown by Product Line</h3>
+                <div class="table-container">
+                    <table class="data-table" id="breakdownTable">
+                        <thead>
+                            <tr>
+                                <th>Product Line</th>
+                                <th>Total</th>
+                                <th>Passed</th>
+                                <th>Failed</th>
+                                <th>Fail Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdownBody"></tbody>
+                    </table>
                 </div>
-                <div class="summary-card">
-                    <h3>Failed</h3>
-                    <p class="summary-value failed" id="failedRecords">—</p>
+            </div>
+
+            <!-- Unit Lookup Card -->
+            <div class="card lookup-card" id="lookup">
+                <h3>Look Up a Unit by Serial</h3>
+                <p class="lookup-hint">Pick a product line and enter the full serial — the 3-digit ID prefix plus the 5-digit ID after it (e.g. <strong>27010741</strong>, or <strong>270-10741</strong>). Pulls up that unit's full test history.</p>
+                <div class="lookup-form">
+                    <div class="form-group">
+                        <label for="lookupSource">Product line:</label>
+                        <select id="lookupSource">
+                            <option value="">Select a product line…</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lookupSerial">Serial #:</label>
+                        <input type="text" id="lookupSerial" placeholder="e.g. 27010741" inputmode="numeric">
+                    </div>
+                    <div class="form-group lookup-btn-group">
+                        <button class="search-button" id="lookupButton">Look up</button>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <h3>Fail Rate</h3>
-                    <p class="summary-value" id="failRate">—</p>
-                </div>
+                <div id="lookupResults" class="lookup-results"></div>
             </div>
 
             <!-- Search + Filter Card -->
@@ -102,11 +147,38 @@
             <div class="trend-section" id="trends">
                 <h2>Trend Overview</h2>
 
-                <div class="charts-grid">
-                    <div class="card chart-card">
-                        <h3>Pass vs Fail</h3>
-                        <div class="chart-box"><canvas id="passFailChart"></canvas></div>
+                <!-- Fixture capability over time (replaces the Pass/Fail donut) -->
+                <div class="card capability-card">
+                    <h3>Fixture Capability Over Time</h3>
+                    <p class="cap-hint">See whether a product line's fail rate spikes at a certain time of day, month, or year — a sign the fixture is losing capability.</p>
+                    <div class="cap-controls">
+                        <div class="form-group">
+                            <label for="capSource">Product line:</label>
+                            <select id="capSource"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="capBucket">Group by:</label>
+                            <select id="capBucket">
+                                <option value="hour">Time of day (hour)</option>
+                                <option value="week">Week</option>
+                                <option value="month">Month</option>
+                                <option value="year">Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="capDay">Specific day (optional):</label>
+                            <input type="date" id="capDay">
+                        </div>
+                        <div class="form-group cap-btn-group">
+                            <button class="apply-button" id="capApply">Show</button>
+                        </div>
                     </div>
+                    <p id="capSummary" class="cap-summary"></p>
+                    <p id="capInsight" class="cap-insight" hidden></p>
+                    <div class="chart-box"><canvas id="capabilityChart"></canvas></div>
+                </div>
+
+                <div class="charts-grid">
                     <div class="card chart-card">
                         <h3>Records by Product Line</h3>
                         <div class="chart-box"><canvas id="bySourceChart"></canvas></div>
@@ -114,10 +186,6 @@
                     <div class="card chart-card">
                         <h3>Fail Rate by Station (Top 10)</h3>
                         <div class="chart-box"><canvas id="byStationChart"></canvas></div>
-                    </div>
-                    <div class="card chart-card">
-                        <h3>Tests Over Time (Monthly)</h3>
-                        <div class="chart-box"><canvas id="trendChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -152,6 +220,64 @@
         </div>
     </section>
 
+    <!-- AI Agent (bottom taskbar launcher) -->
+    <div id="agentBar" class="agent-bar">
+        <button type="button" id="agentToggle" class="agent-bar-launcher" title="Ask the AI assistant" aria-label="Open AI assistant">
+            <span class="agent-bar-icon">
+                <img src="img/acr-logo.png" alt="" class="agent-icon-img"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <span class="agent-icon-emoji">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                        <polygon transform="rotate(45 50 50)"
+                                 points="30,4 70,4 70,30 96,30 96,70 70,70 70,96 30,96 30,70 4,70 4,30 30,30"
+                                 fill="#141414" stroke="#c6ff00" stroke-width="8" stroke-linejoin="round"/>
+                        <text x="50" y="52" text-anchor="middle" dominant-baseline="central"
+                              fill="#fff" font-family="Arial, sans-serif" font-weight="bold" font-size="15">ACR</text>
+                    </svg>
+                </span>
+            </span>
+            <span class="agent-bar-label">Product Tracker Assistant</span>
+        </button>
+    </div>
+    <div id="agentPanel" class="agent-panel" hidden>
+        <div class="agent-header">
+            <span>Product Tracker Assistant</span>
+            <button type="button" id="agentClose" class="agent-close" aria-label="Close">&times;</button>
+        </div>
+        <div id="agentMessages" class="agent-messages"></div>
+        <div class="agent-input-row">
+            <input type="text" id="agentInput" placeholder="Ask about your test data…">
+            <button id="agentSend" class="agent-send">Send</button>
+        </div>
+    </div>
+
+    <!-- AI Smart Search (floating, top-right) -->
+    <button type="button" id="aiSearchToggle" class="ai-fab" title="AI smart search" aria-label="Open AI smart search">
+        <img src="img/acr-logo.png" alt="" class="ai-fab-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <span class="ai-fab-fallback">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                <polygon transform="rotate(45 50 50)"
+                         points="30,4 70,4 70,30 96,30 96,70 70,70 70,96 30,96 30,70 4,70 4,30 30,30"
+                         fill="#141414" stroke="#c6ff00" stroke-width="7" stroke-linejoin="round"/>
+                <text x="50" y="52" text-anchor="middle" dominant-baseline="central"
+                      fill="#fff" font-family="Arial, sans-serif" font-weight="bold" font-size="15">ACR</text>
+            </svg>
+        </span>
+    </button>
+    <div id="aiSearchPopover" class="ai-popover" hidden>
+        <div class="ai-popover-header">
+            <span>Ask in Plain English ✨</span>
+            <button type="button" id="aiSearchClose" class="ai-popover-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="ai-popover-hint">Describe what you want and AI sets the filters — e.g. “Boat fails in 2023”.</p>
+        <div class="ai-popover-form">
+            <input type="text" id="aiQuery" placeholder="e.g. Hand_Held failures at station 9 in 2024">
+            <button class="search-button" id="aiSearchButton">Ask</button>
+        </div>
+        <p id="aiStatus" class="ai-status" hidden></p>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -162,7 +288,14 @@
     <!-- Libraries: Supabase client + Chart.js (load before our config + dashboard code) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/supabase-config.js"></script>
+    <script src="js/ais-config.local.js"></script>
+    <script src="js/mapBackground.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/capability.js"></script>
+    <script src="js/aiSearch.js"></script>
+    <script src="js/agentChat.js"></script>
+    <script src="js/theme.js"></script>
 </body>
 </html>

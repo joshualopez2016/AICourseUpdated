@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "datalook",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5500", "--bind", "127.0.0.1"],
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/static_server.ps1", "5500"],
       "port": 5500
     }
   ]

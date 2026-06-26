@@ -6,6 +6,13 @@ import_files/*.csv
 .env
 *.env
 
+# Classified / sensitive content stays LOCAL ONLY — never pushed to GitHub.
+# Fill in real serial-number mappings in a *.private.* copy (see the *.template.*
+# version, which is safe to commit). Anything under docs/private/ is also ignored.
+*.private.*
+*.local.*
+docs/private/
+
 # Python cache
 __pycache__/
 *.pyc

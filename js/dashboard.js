@@ -173,11 +173,15 @@ async function populateFilterOptions() {
     });
 
     const stationSelect = document.getElementById("stationFilter");
-    (data.stations || []).forEach(function (s) {
-        const opt = document.createElement("option");
-        opt.value = s; opt.textContent = s;
-        stationSelect.appendChild(opt);
-    });
+    // Natural sort so "Test Fixture 2" comes before "Test Fixture 10" (not text order).
+    (data.stations || [])
+        .slice()
+        .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" }))
+        .forEach(function (s) {
+            const opt = document.createElement("option");
+            opt.value = s; opt.textContent = s;
+            stationSelect.appendChild(opt);
+        });
 }
 
 // =====================================================================

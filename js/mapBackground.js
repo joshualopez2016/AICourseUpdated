@@ -13,7 +13,7 @@
     if (!el || typeof L === "undefined") return;
 
     const map = L.map(el, {
-        center: [26.8, -81.0],   // Florida (ACR's home turf): peninsula, Gulf, Straits, Bahamas
+        center: [27.2, -85.5],   // Florida (ACR's home turf): offset west so the peninsula sits in the open right-side gutter, clear of the centered content
         zoom: 6,
         zoomControl: false,
         attributionControl: true,

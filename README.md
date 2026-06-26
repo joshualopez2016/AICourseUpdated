@@ -1,131 +1,158 @@
-# Data Lookup & Trend Dashboard (DataLook)
+# Product Tracker
 
-A simple static website (plain HTML/CSS/JavaScript) for searching, filtering, and
-visualizing ~517,000 RF/electronics test records, backed by **Supabase**
-(PostgreSQL + Auth). No build step, no framework — just open the files with a
-static server.
+A static web app (plain HTML / CSS / JavaScript) for searching, analyzing, and
+understanding RF/electronics test records, backed by **Supabase** (PostgreSQL +
+Auth + Edge Functions) and an **LLM gateway** for AI features. No build step, no
+framework.
+
+- **Live site:** https://joshualopez2016.github.io/AICourseUpdated/
+- **Demo video:** _(3–5 min) — link goes here_
 
 ---
 
 ## What it does
 
-- **Login / register** with email + password (Supabase Auth).
-- **Summary cards**: total records, passed, failed, fail rate.
-- **Four charts** (Chart.js): Pass vs Fail, records by product line, fail rate by
-  station, and tests over time.
-- **Records table** with keyword search, filters (product line / station / result /
-  date range), and pagination over the full dataset.
+- **Login** (Supabase Auth; public sign-ups disabled for the hosted demo).
+- **Summary card** with a **per-product-line breakdown** (total / pass / fail / fail rate).
+- **Look Up a Unit by Serial** — a unit's serial is a 3-digit ID prefix + a 5-digit
+  ID suffix (e.g. `270-10741`); returns that unit's full test history.
+- **Search & filter** the records table by keyword, product line, station, result, and date range, with pagination.
+- **Fixture Capability Over Time** — pick a product line and group by hour-of-day / week / month / year (or drill into a single day) to spot when the fixture's fail rate climbs. Flags the worst window for **preventative-maintenance scheduling**.
+- **Charts** (Chart.js): records by product line, fail rate by station.
+- **Live AIS map background** (Leaflet + AISStream) centered on Florida, with vessels as triangles colored by ship type.
+- **Dark / light theme** (persisted), **responsive** (desktop / tablet / phone), ACR branding.
+
+### 🤖 AI features (two, both adding real value)
+
+| Feature | What it does | How |
+|---|---|---|
+| **Ask in Plain English** (✨ launcher) | You type *"Boat failures in 2023"*; it sets the dashboard filters and runs the query. | Edge Function `nl-search` → LLM returns structured JSON filters. |
+| **Product Tracker Assistant** (chatbot) | Conversational Q&A about your data and how to use the app, grounded in the current on-screen numbers. | Edge Function `agent-chat` → LLM with the live stats as context. |
+
+Both call **FAU Trussed.ai** (an OpenAI-compatible LLM gateway, model `cogito:14b`)
+from **server-side Supabase Edge Functions** — the API key never reaches the
+browser. See [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md) and
+[docs/COST_ANALYSIS.md](docs/COST_ANALYSIS.md).
 
 ---
 
-## How the data is organized
+## Architecture
 
-All records live in one table, **`public.test_records`**. The original data came
-from `Test_Data_.xlsx`, which had **three sheets with three different layouts**
-(`Hand_Held`, `FLY`, `Boat`). Those are merged into one shape:
+```
+Browser (static site on GitHub Pages)
+  │  supabase-js
+  ├──► Supabase Postgres  (test_records + RPCs, protected by Row Level Security)
+  ├──► Supabase Auth      (email/password login)
+  └──► Supabase Edge Functions  ── HTTPS ──►  FAU Trussed.ai (OpenAI-compatible LLM)
+          nl-search, agent-chat        (TRUSSED_API_KEY lives here as a secret)
+```
 
-| Column          | Meaning                                              |
-|-----------------|------------------------------------------------------|
-| `id`            | auto primary key                                     |
-| `user_id`       | who inserted the row (NULL for the bulk import)      |
-| `source`        | product line: `Hand_Held` \| `FLY` \| `Boat`         |
-| `record_date`   | when the test ran                                    |
-| `product_model` | e.g. `RLB41` (Boat); NULL where not provided         |
-| `station`       | test station / fixture                               |
-| `result`        | `Pass` or `Fail` (source used `1` = Pass, `0` = Fail)|
-| `bursts`        | integer                                              |
-| `power_dbm`     | power output (dBm)                                   |
-| `burst_amps`    | burst current                                        |
-| `standby_amps`  | standby current                                      |
-| `details`       | JSON holding the sheet-specific extra columns        |
+- **No secrets in the browser.** The Supabase *publishable* key is safe to ship (RLS gates it); the **LLM key is a server-side Edge Function secret**.
+- **Error handling & rate limiting:** every AI call has a loading state, catches failures, and maps provider errors (401/403 bad key, 404 model, 429 rate-limit/budget) to friendly messages.
 
-Row counts: **Hand_Held 390,935 · Boat 121,797 · FLY 4,712 → 517,444 total.**
-(The Hand_Held sheet also held ~657k blank/padding rows with no date; those are
-skipped during import.)
+---
+
+## Data model
+
+All records live in one table, **`public.test_records`**. The source `Test_Data_.xlsx`
+had three sheets with different layouts (`Hand_Held`, `FLY`, `Boat`), merged into
+one shape; sheet-specific extras live in a JSON `details` column.
+
+| Column | Meaning |
+|---|---|
+| `id` | auto primary key |
+| `source` | product line: `Hand_Held` \| `FLY` \| `Boat` |
+| `record_date` | when the test ran |
+| `product_model` | e.g. `RLB41` (Boat); NULL where not provided |
+| `station` | test station / fixture |
+| `result` | `Pass` or `Fail` |
+| `bursts`, `power_dbm`, `burst_amps`, `standby_amps` | measurements |
+| `details` | JSON with the sheet-specific extra columns (incl. the serial-number ID fields) |
+
+Database functions (`sql/schema.sql`): `get_dashboard_stats`, `get_filter_options`,
+`get_capability_over_time`.
 
 ---
 
 ## Project layout
 
 ```
-data-lookup-dashboard/
-├── index.html              Home page
-├── login.html              Login / register
-├── dashboard.html          The dashboard
-├── css/style.css           Styles
+├── index.html / login.html / dashboard.html   pages
+├── css/style.css                               styles (themes, responsive, branding)
 ├── js/
-│   ├── supabase-config.js  Project URL + publishable key, creates the client
-│   ├── app.js              Home-page logic
-│   ├── auth.js             Supabase login / register
-│   └── dashboard.js        Data fetching, charts, table, filters
-├── sql/schema.sql          Table + indexes + RLS + 2 SQL functions
-├── import_files/*.csv      Generated import data (git-ignored; large)
+│   ├── supabase-config.js   Supabase client (URL + publishable key)
+│   ├── auth.js              login / register
+│   ├── dashboard.js         data fetching, charts, table, filters, breakdown
+│   ├── capability.js        Fixture Capability Over Time
+│   ├── aiSearch.js          AI smart search (✨)            ── AI feature #1
+│   ├── agentChat.js         AI chatbot assistant            ── AI feature #2
+│   ├── mapBackground.js     live AIS map + vessel markers
+│   ├── theme.js             dark / light toggle
+│   └── ais-config.example.js  template for the (git-ignored) AISStream key
+├── supabase/functions/
+│   ├── nl-search/index.ts   Edge Function → Trussed (NL → filters JSON)
+│   └── agent-chat/index.ts  Edge Function → Trussed (chat)
+├── sql/
+│   ├── schema.sql           table, indexes, RLS, RPC functions
+│   └── seed_synthetic.sql   optional synthetic-data generator (not used in the demo)
+├── docs/
+│   ├── API_ENDPOINTS.md     endpoint documentation + test cases
+│   ├── COST_ANALYSIS.md     LLM usage & cost estimates
+│   └── serial-number-mapping.template.md
 └── scripts/
-    ├── build_import_csvs.py Excel  -> unified CSVs
-    └── load_to_supabase.py  Apply schema + bulk-load the CSVs
+    ├── build_import_csvs.py  Excel → unified CSVs
+    ├── load_to_supabase.py   apply schema + bulk-load (append by default; --replace to rebuild)
+    └── static_server.ps1     dependency-free local static server (Windows)
 ```
-
----
-
-## Setup from scratch (already done for this project)
-
-You only need to repeat these if you start with a fresh Supabase project.
-
-### 1. Put your keys in `js/supabase-config.js`
-The Project URL and the **publishable** (anon) key are safe to ship in a static
-site — Row Level Security controls what they can do.
-
-### 2. Build the import files from the Excel
-```bash
-pip install openpyxl
-python scripts/build_import_csvs.py        # writes import_files/*.csv
-```
-
-### 3. Apply the schema and load the data
-The loader reads the DB connection string from an environment variable so no
-secret is stored in the repo. Get the string from the Supabase dashboard:
-**Settings → Database → Connection string → Session pooler**, and replace
-`[YOUR-PASSWORD]` with your database password.
-
-```powershell
-pip install psycopg2-binary
-$env:SUPABASE_DB_URL = "host=...pooler.supabase.com port=5432 dbname=postgres user=postgres.<ref> password=<your-password>"
-python scripts/load_to_supabase.py
-$env:SUPABASE_DB_URL = $null
-```
-This applies `sql/schema.sql`, truncates, bulk-loads all CSVs, and prints a count
-check.
-
-### 4. Auth settings
-For easy testing, **Authentication → Providers → Email → "Confirm email"** can be
-**OFF** (new accounts can log in immediately). Turn it **ON** for production.
 
 ---
 
 ## Run it locally
 
-From the project root, start any static server, then open the URL:
+No build step. Serve the folder with any static server and open it:
 
 ```bash
-python -m http.server 5500
-# then visit http://localhost:5500/index.html
+python -m http.server 5500          # or: py -m http.server 5500
+# Windows without Python:  powershell -File scripts/static_server.ps1 5500
+# then visit http://localhost:5500/
 ```
 
-Register an account (or log in), and the dashboard loads live data.
+The frontend talks to the live Supabase project, so login + data work locally.
 
 ---
 
-## Free tier notes
+## Deployment
 
-- The dataset uses ~187 MB — well under Supabase's 500 MB free limit.
-- Free projects **pause after 7 days of inactivity**; just click Restore in the
-  dashboard to wake it. Data is preserved.
+**Frontend** — static, hosted on **GitHub Pages** (repo Settings → Pages → branch
+`main` / root). Push to `main` to redeploy.
+
+**Database** — run `sql/schema.sql` in the Supabase SQL Editor (idempotent: creates
+the table, indexes, RLS policy, and the three RPC functions).
+
+**AI Edge Functions** — deploy `nl-search` and `agent-chat` (Supabase → Edge
+Functions → *Deploy via Editor*, paste each `index.ts`), then add the secret:
+
+```
+TRUSSED_API_KEY = <your FAU Trussed key>
+# optional: TRUSSED_MODEL (default cogito:14b), TRUSSED_BASE_URL
+```
+
+**Hosted-demo hardening** — public sign-ups are turned **off**
+(Authentication → Sign In / Providers → *Allow new users to sign up* = off); the
+instructor is given a dedicated login.
 
 ---
 
-## Deploying publicly
+## Security notes
 
-This is a static site — deploy the folder to Netlify, Vercel, Cloudflare Pages, or
-GitHub Pages. After deploying:
-1. Add the deployed URL under **Supabase → Authentication → URL Configuration**.
-2. Turn **"Confirm email" back ON** for production.
+- LLM API key stored only as a Supabase Edge Function **secret** — never in the repo or browser.
+- The AISStream key lives in `js/ais-config.local.js`, which is **git-ignored** (`*.local.*`); a committed `ais-config.example.js` documents the shape.
+- Row Level Security: only authenticated users can read `test_records`.
+- See [docs/serial-number-mapping.template.md](docs/serial-number-mapping.template.md) for the convention used to keep sensitive mappings local.
+
+---
+
+## Tech stack
+
+HTML / CSS / vanilla JS · Supabase (PostgreSQL, Auth, Edge Functions / Deno) ·
+Chart.js · Leaflet + AISStream · FAU Trussed.ai (OpenAI-compatible LLM, `cogito:14b`).

@@ -22,7 +22,7 @@
     async function runAiSearch() {
         const query = input.value.trim();
         if (!query) {
-            setStatus("Type a question first — e.g. “Hand_Held failures at station 9 in 2024”.");
+            setStatus("Type a question first — e.g. “Hand_Held failures at Test Fixture 5 in 2024”.");
             return;
         }
         setStatus("Thinking…", true);

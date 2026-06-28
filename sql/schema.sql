@@ -119,8 +119,13 @@ as $$
 declare
     result_json json;
 begin
-    with filtered as (
-        select *
+    -- Select ONLY the columns the aggregates need. Using `select *` here
+    -- materialized the heavy `details` jsonb for all ~517k rows and then scanned
+    -- it 7 times, which exceeded the statement timeout on the unfiltered
+    -- (Reset / initial) load on the free nano instance. The search filter can
+    -- still reference t.product_model in the WHERE without selecting it.
+    with filtered as materialized (
+        select t.source, t.station, t.result, t.record_date
         from public.test_records t
         where (p_result  is null or t.result = p_result)
           and (p_source  is null or t.source = p_source)

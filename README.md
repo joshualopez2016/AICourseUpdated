@@ -16,6 +16,10 @@ framework.
 - **Summary card** with a **per-product-line breakdown** (total / pass / fail / fail rate).
 - **Look Up a Unit by Serial** — a unit's serial is a 3-digit ID prefix + a 5-digit
   ID suffix (e.g. `270-10741`); returns that unit's full test history.
+- **Downloadable Test Report (PDF)** — from any serial lookup, generate a one-click
+  406 MHz beacon test report: branded header, PASS/FAIL summary, a parameter table
+  with measured values, analyser graphs, and the unit's real test dates (built in the
+  browser with jsPDF).
 - **Search & filter** the records table by keyword, product line, station, result, and date range, with pagination.
 - **Fixture Capability Over Time** — pick a product line and group by hour-of-day / week / month / year (or drill into a single day) to spot when the fixture's fail rate climbs. Flags the worst window for **preventative-maintenance scheduling**.
 - **Charts** (Chart.js): records by product line, fail rate by station.
@@ -86,9 +90,11 @@ Database functions (`sql/schema.sql`): `get_dashboard_stats`, `get_filter_option
 │   ├── capability.js        Fixture Capability Over Time
 │   ├── aiSearch.js          AI smart search (✨)            ── AI feature #1
 │   ├── agentChat.js         AI chatbot assistant            ── AI feature #2
+│   ├── testReport.js        per-unit Test Report PDF (jsPDF)
 │   ├── mapBackground.js     live AIS map + vessel markers
 │   ├── theme.js             dark / light toggle
 │   └── ais-config.example.js  template for the (git-ignored) AISStream key
+├── assets/reports/          analyser graphs embedded in the Test Report PDF
 ├── supabase/functions/
 │   ├── nl-search/index.ts   Edge Function → Trussed (NL → filters JSON)
 │   └── agent-chat/index.ts  Edge Function → Trussed (chat)
@@ -155,4 +161,5 @@ instructor is given a dedicated login.
 ## Tech stack
 
 HTML / CSS / vanilla JS · Supabase (PostgreSQL, Auth, Edge Functions / Deno) ·
-Chart.js · Leaflet + AISStream · FAU Trussed.ai (OpenAI-compatible LLM, `cogito:14b`).
+Chart.js · Leaflet + AISStream · jsPDF (client-side PDF reports) ·
+FAU Trussed.ai (OpenAI-compatible LLM, `cogito:14b`).

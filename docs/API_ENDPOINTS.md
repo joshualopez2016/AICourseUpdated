@@ -17,13 +17,14 @@ the JWT).
 POST /auth/v1/token?grant_type=password
 Headers:  apikey: <PUBLISHABLE_KEY>
           Content-Type: application/json
-Body:     { "email": "datalook.tester@gmail.com", "password": "TestPass12345" }
+Body:     { "email": "<demo-login-email>", "password": "<demo-login-password>" }
 ```
+> The demo login is provided privately with the submission (public sign-ups are disabled).
 ```bash
 curl -X POST "https://bgcacnbyrbpctpmfevno.supabase.co/auth/v1/token?grant_type=password" \
   -H "apikey: sb_publishable_nCoVV1ZUWNpAecD1fNz23A_6FE1nHKg" \
   -H "Content-Type: application/json" \
-  -d '{"email":"datalook.tester@gmail.com","password":"TestPass12345"}'
+  -d '{"email":"<demo-login-email>","password":"<demo-login-password>"}'
 # → { "access_token": "eyJ...", "token_type": "bearer", ... }
 ```
 Use the returned `access_token` as `Authorization: Bearer <token>` below (referred to as `$TOKEN`).

@@ -268,6 +268,27 @@ async function doLookup() {
                 <tbody>${rows}</tbody>
             </table>
         </div>`;
+
+    // Offer a downloadable test report for this unit (graphs + synthetic
+    // measurements + the real test dates above).
+    if (typeof window.generateTestReport === "function") {
+        const reportBtn = document.createElement("button");
+        reportBtn.type = "button";
+        reportBtn.className = "report-btn";
+        reportBtn.textContent = "⬇ Download Test Report (PDF)";
+        reportBtn.addEventListener("click", function () {
+            reportBtn.disabled = true;
+            reportBtn.textContent = "Building report…";
+            Promise.resolve(window.generateTestReport({
+                serial: serialLabel, source: source, model: data[0].product_model, records: data
+            })).finally(function () {
+                reportBtn.disabled = false;
+                reportBtn.textContent = "⬇ Download Test Report (PDF)";
+            });
+        });
+        const summaryEl = box.querySelector(".lookup-summary");
+        if (summaryEl) summaryEl.appendChild(reportBtn);
+    }
 }
 
 // =====================================================================

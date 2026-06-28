@@ -486,6 +486,28 @@ body {
     font-size: 0.9rem;
 }
 
+.report-btn {
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: #141414;
+    color: #c6ff00;
+    border: 1px solid #c6ff00;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.report-btn:hover:not(:disabled) {
+    background: #c6ff00;
+    color: #141414;
+}
+.report-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 /* Card Styles */
 .card {
     background-color: white;

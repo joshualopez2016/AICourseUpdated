@@ -93,7 +93,8 @@ Database functions (`sql/schema.sql`): `get_dashboard_stats`, `get_filter_option
 │   ├── testReport.js        per-unit Test Report PDF (jsPDF)
 │   ├── mapBackground.js     live AIS map + vessel markers
 │   ├── theme.js             dark / light toggle
-│   └── ais-config.example.js  template for the (git-ignored) AISStream key
+│   ├── ais-config.js        AISStream key for the live map (free, client-side key)
+│   └── ais-config.example.js  template showing the config shape
 ├── assets/reports/          analyser graphs embedded in the Test Report PDF
 ├── supabase/functions/
 │   ├── nl-search/index.ts   Edge Function → Trussed (NL → filters JSON)
@@ -152,7 +153,7 @@ instructor is given a dedicated login.
 ## Security notes
 
 - LLM API key stored only as a Supabase Edge Function **secret** — never in the repo or browser.
-- The AISStream key lives in `js/ais-config.local.js`, which is **git-ignored** (`*.local.*`); a committed `ais-config.example.js` documents the shape.
+- The **AISStream** key (live vessel map) is in `js/ais-config.js`. AISStream runs as a browser websocket, so the key must be client-side for the ships to render on the public site — it's a **free, rate-limited** key (no billing), treated as low-sensitivity and regenerable. The high-value secret — the **LLM key** — is *never* in the browser; it stays a server-side Edge Function secret.
 - Row Level Security: only authenticated users can read `test_records`.
 - See [docs/serial-number-mapping.template.md](docs/serial-number-mapping.template.md) for the convention used to keep sensitive mappings local.
 

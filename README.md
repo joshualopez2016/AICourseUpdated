@@ -6,7 +6,7 @@ Auth + Edge Functions) and an **LLM gateway** for AI features. No build step, no
 framework.
 
 - **Live site:** https://joshualopez2016.github.io/AICourseUpdated/
-- **Demo video:** _(3–5 min) — link goes here_
+- **Demo video:** [Watch the demo](demo-video.mp4) (≈5 min, committed in this repo)
 
 ---
 

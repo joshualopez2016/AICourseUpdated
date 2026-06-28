@@ -1,4 +1,4 @@
-# Minimal static file server (no dependencies) for previewing the DataLook site.
+# Minimal static file server (no dependencies) for previewing the Product Tracker site.
 # Usage: powershell -ExecutionPolicy Bypass -File scripts/static_server.ps1 [port]
 param([int]$Port = 5500)
 
@@ -36,7 +36,7 @@ catch {
   $listener.Prefixes.Add("http://localhost:$Port/")
   $listener.Start()
 }
-Write-Host "DataLook static server running at http://localhost:$Port/  (root: $root)"
+Write-Host "Product Tracker static server running at http://localhost:$Port/  (root: $root)"
 
 while ($listener.IsListening) {
   try {

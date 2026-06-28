@@ -1,5 +1,5 @@
 -- =====================================================================
--- DataLook / data-lookup-dashboard  -- database schema
+-- Product Tracker  -- database schema
 -- =====================================================================
 -- Run this ONCE against your Supabase project, either:
 --   * in the Supabase dashboard:  SQL Editor -> paste -> Run, or

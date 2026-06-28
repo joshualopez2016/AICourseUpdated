@@ -14,9 +14,9 @@
 (function () {
     // The three analyser screens to embed on every report.
     const REPORT_IMAGES = [
-        { src: "assets/reports/phase-406.png",    caption: "Phase 406 · complex modulation (0.423 rad/div, 1.04 ms/div)" },
-        { src: "assets/reports/power-406.png",    caption: "Power 406 · burst power envelope (2.5 dB/div, 75 ms/div)" },
-        { src: "assets/reports/spectrum-406.png", caption: "Spectrum 406 · carrier & mask (10 dB/div, 6 kHz/div)" }
+        { src: "assets/reports/phase-406.jpg",    caption: "Phase 406 · complex modulation (0.423 rad/div, 1.04 ms/div)" },
+        { src: "assets/reports/power-406.jpg",    caption: "Power 406 · burst power envelope (2.5 dB/div, 75 ms/div)" },
+        { src: "assets/reports/spectrum-406.jpg", caption: "Spectrum 406 · carrier & mask (10 dB/div, 6 kHz/div)" }
     ];
 
     // Beacon type shown per product line (graphs stay the same on all).
@@ -63,7 +63,9 @@
                     const c = document.createElement("canvas");
                     c.width = img.naturalWidth; c.height = img.naturalHeight;
                     c.getContext("2d").drawImage(img, 0, 0);
-                    resolve({ dataURL: c.toDataURL("image/png"), w: img.naturalWidth, h: img.naturalHeight });
+                    // Embed as JPEG to keep the PDF small (these are photos/screens,
+                    // not line art — PNG would bloat the file to several MB).
+                    resolve({ dataURL: c.toDataURL("image/jpeg", 0.85), format: "JPEG", w: img.naturalWidth, h: img.naturalHeight });
                 } catch (e) { resolve(null); }
             };
             img.onerror = function () { resolve(null); };
@@ -224,7 +226,7 @@
             // Page break if this row won't fit.
             if (rowTopY + imgH + 8 > PH - 16 && col === 0) { doc.addPage(); rowTopY = 20; }
             if (meta) {
-                doc.addImage(meta.dataURL, "PNG", x, rowTopY, imgW, imgH);
+                doc.addImage(meta.dataURL, meta.format || "JPEG", x, rowTopY, imgW, imgH);
             } else {
                 doc.setDrawColor(180); doc.setFillColor(245, 245, 245);
                 doc.rect(x, rowTopY, imgW, imgW * 0.78, "FD");

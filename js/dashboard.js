@@ -66,6 +66,17 @@ function fmtNum(n) {
     return (n === null || n === undefined) ? "" : Number(n).toLocaleString();
 }
 
+// Build a unit's serial (3-digit prefix + suffix, e.g. 270-10741) from its
+// details JSON. The two ID fields are named differently per product line
+// (see SERIAL_FIELDS). Returns "" when the parts aren't present.
+function serialFromRow(source, details) {
+    const f = SERIAL_FIELDS[source];
+    if (!f || !details) return "";
+    const p = details[f.prefix], s = details[f.suffix];
+    if (p === null || p === undefined || s === null || s === undefined) return "";
+    return p + "-" + s;
+}
+
 // Read the current state of all filter inputs into one object.
 function getFilters() {
     const search = document.getElementById("searchInput").value.trim();
@@ -395,11 +406,11 @@ function renderCharts(stats) {
 // =====================================================================
 async function loadTable(filters, page) {
     const tbody = document.getElementById("recordsTable");
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Loading…</td></tr>';
 
     let q = supabaseClient
         .from("test_records")
-        .select("record_date,source,product_model,station,result,bursts,power_dbm",
+        .select("record_date,source,product_model,station,result,bursts,power_dbm,details",
                 { count: "exact" });
 
     if (filters.result) q = q.eq("result", filters.result);
@@ -421,19 +432,20 @@ async function loadTable(filters, page) {
     const { data, count, error } = await q;
     if (error) {
         console.error("table query failed:", error);
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Error loading records (see console).</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#e74c3c;">Error loading records (see console).</td></tr>';
         return;
     }
 
     totalRows = count || 0;
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No records match your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No records match your filters.</td></tr>';
     } else {
         tbody.innerHTML = data.map(function (r) {
             const cls = r.result === "Pass" ? "status-pass" : "status-fail";
             return `<tr>
                 <td>${formatDateTime(r.record_date)}</td>
+                <td>${escapeHtml(serialFromRow(r.source, r.details))}</td>
                 <td>${escapeHtml(r.source)}</td>
                 <td>${escapeHtml(r.product_model)}</td>
                 <td>${escapeHtml(r.station)}</td>

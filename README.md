@@ -5,8 +5,12 @@ understanding RF/electronics test records, backed by **Supabase** (PostgreSQL +
 Auth + Edge Functions) and an **LLM gateway** for AI features. No build step, no
 framework.
 
-- **Live site:** https://joshualopez2016.github.io/AICourseUpdated/
-- **Demo video:** [Watch the demo](demo-video.mp4) (≈5 min, committed in this repo)
+**Author:** Joshua Lopez · **Z#:** Z23384309 · **Email:** Joshualopez2016@fau.edu
+FAU AI HootCamp — Summer 2026, Week 3 Project
+
+- **Live site (deployed):** https://joshualopez2016.github.io/AICourseUpdated/
+- **Demo video (3–5 min):** [Watch the demo](demo-video.mp4) (committed in this repo)
+- **Design & planning docs:** [docs/DESIGN.md](docs/DESIGN.md) (user flow, DB schema, API architecture)
 
 ---
 

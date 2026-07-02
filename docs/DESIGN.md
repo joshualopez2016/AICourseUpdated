@@ -68,7 +68,21 @@ erDiagram
         uuid user_id FK
         timestamptz created_at
     }
+    AUTH_USERS ||--o{ NOTES : "owns (RLS)"
+    NOTES {
+        bigint id PK
+        uuid user_id FK "= auth.uid()"
+        text source
+        text serial "unit, e.g. 270-10741"
+        text body
+        timestamptz created_at
+        timestamptz updated_at
+    }
 ```
+
+The **`notes`** table (see [../sql/notes_crud.sql](../sql/notes_crud.sql)) provides full
+**CRUD** — a user can create, read, update, and delete their own annotations on a
+unit; RLS policies scope every operation to `user_id = auth.uid()`.
 
 - **Serial number** = a 3-digit ID prefix + a 5-digit ID suffix, stored in
   `details` under per-line keys (`Boat`: id1/id2, `Hand_Held`: start_n/end_n,
@@ -120,6 +134,7 @@ flowchart LR
 | AI Smart Search | Query without knowing filters/SQL | LLM turns plain English into structured filters |
 | AI Assistant | Answer data questions in context | LLM given live on-screen stats as grounding |
 | Fixture Capability over time | Know *when* a fixture degrades | Group fails by hour/week/month → flag worst window for maintenance |
+| Unit Notes (full CRUD) | Capture review annotations per unit | `notes` table + RLS; create/read/update/delete in the lookup panel |
 | Charts + breakdown | See pass/fail patterns at a glance | Chart.js over aggregated RPC output |
 
 **Tech stack:** HTML / CSS / vanilla JS · Supabase (Postgres, Auth, Edge

@@ -24,6 +24,7 @@ FAU AI HootCamp — Summer 2026, Week 3 Project
   406 MHz beacon test report: branded header, PASS/FAIL summary, a parameter table
   with measured values, analyser graphs, and the unit's real test dates (built in the
   browser with jsPDF).
+- **Unit Notes — full CRUD** — a logged-in user can **create, read, update, and delete** their own free-text notes on any unit (shown in the serial lookup). Backed by a `notes` table with Row Level Security so each user only sees/edits their own notes.
 - **Search & filter** the records table by keyword, product line, station, result, and date range, with pagination.
 - **Fixture Capability Over Time** — pick a product line and group by hour-of-day / week / month / year (or drill into a single day) to spot when the fixture's fail rate climbs. Flags the worst window for **preventative-maintenance scheduling**.
 - **Charts** (Chart.js): records by product line, fail rate by station.

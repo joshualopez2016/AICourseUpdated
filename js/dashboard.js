@@ -300,6 +300,14 @@ async function doLookup() {
         const summaryEl = box.querySelector(".lookup-summary");
         if (summaryEl) summaryEl.appendChild(reportBtn);
     }
+
+    // Unit Notes — per-user CRUD annotations for this serial.
+    if (typeof window.renderUnitNotes === "function") {
+        const notesBox = document.createElement("div");
+        notesBox.className = "unit-notes";
+        box.appendChild(notesBox);
+        window.renderUnitNotes(notesBox, source, serialLabel);
+    }
 }
 
 // =====================================================================

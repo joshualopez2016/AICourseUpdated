@@ -508,6 +508,82 @@ body {
     cursor: default;
 }
 
+/* Unit Notes (CRUD) */
+.unit-notes {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+.notes-title {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+.notes-add {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.9rem;
+}
+.notes-textarea {
+    flex: 1;
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    font: inherit;
+    resize: vertical;
+}
+.notes-btn {
+    padding: 0.5rem 0.9rem;
+    background: #5b6ee1;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.notes-btn:hover { background: #4a5bd0; }
+.notes-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.note-item {
+    border: 1px solid #eceff3;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    background: #fafbfc;
+}
+.note-body { color: #2c3e50; white-space: pre-wrap; word-break: break-word; }
+.note-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: #8a919e;
+}
+.note-actions { display: flex; gap: 0.75rem; }
+.note-edit, .note-del, .note-cancel {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0;
+}
+.note-edit { color: #5b6ee1; }
+.note-del { color: #e74c3c; }
+.note-cancel { color: #8a919e; margin-left: 0.5rem; }
+.note-edit-actions { margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem; }
+.notes-empty, .notes-loading, .notes-err { color: #8a919e; font-size: 0.9rem; margin: 0; }
+.notes-err { color: #e74c3c; }
+
+/* Dark theme */
+[data-theme="dark"] .unit-notes { border-top-color: #2a3344; }
+[data-theme="dark"] .notes-title { color: #e6e9ef; }
+[data-theme="dark"] .note-item { background: #1c2330; border-color: #2a3344; }
+[data-theme="dark"] .note-body { color: #e6e9ef; }
+[data-theme="dark"] .notes-textarea { background: #141a24; border-color: #2a3344; color: #e6e9ef; }
+
 /* Card Styles */
 .card {
     background-color: white;
